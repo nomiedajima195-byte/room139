@@ -1,60 +1,73 @@
-import './style.css'
-import javascriptLogo from './assets/javascript.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import { setupCounter } from './counter.js'
+import * as THREE from 'three';
 
-document.querySelector('#app').innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${javascriptLogo}" class="framework" alt="JavaScript logo"/>
-    <img src=${viteLogo} class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.js</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+// --- シーン設定 ---
+const canvas = document.querySelector('#canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
 
-<div class="ticks"></div>
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src=${viteLogo} alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-          <img class="button-icon" src="${javascriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+// --- 霧のシェーダー（Fragment Shader） ---
+// ここでザラザラ感と色の混ざり具合を計算しているよ
+const fragmentShader = `
+  precision highp float;
+  uniform float uTime;
+  uniform vec2 uResolution;
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+  // ノイズ関数（ザラザラとムラを作る）
+  float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+  }
 
-setupCounter(document.querySelector('#counter'))
+  void main() {
+    vec2 uv = gl_FragCoord.xy / uResolution.xy;
+    float t = uTime * 0.2;
+
+    // パステルカラーの定義
+    vec3 colorA = vec3(0.8, 0.9, 1.0); // ミント/スカイ
+    vec3 colorB = vec3(1.0, 0.85, 0.9); // ピーチ/ピンク
+    vec3 colorC = vec3(0.9, 0.8, 1.0); // ラベンダー
+
+    // ゆっくり混ざり合う動き
+    float mixValue = sin(uv.x * 2.0 + t) * 0.5 + 0.5;
+    mixValue += cos(uv.y * 3.0 - t) * 0.2;
+    
+    vec3 finalColor = mix(colorA, colorB, mixValue);
+    finalColor = mix(finalColor, colorC, sin(t * 0.5) * 0.5 + 0.5);
+
+    // 【重要】ザラザラした粒子感（グレイン）を加える
+    float grain = (random(uv + t) - 0.5) * 0.07;
+    finalColor += grain;
+
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;
+
+// --- メッシュ作成 ---
+const geometry = new THREE.PlaneGeometry(2, 2);
+const material = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime: { value: 0 },
+    uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+  },
+  fragmentShader
+});
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+// --- アニメーションループ ---
+function animate(time) {
+  material.uniforms.uTime.value = time * 0.001;
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+// リサイズ対応
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+});
+
+requestAnimationFrame(animate);
