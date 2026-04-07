@@ -6,44 +6,28 @@ body, html {
   font-family: sans-serif;
 }
 
+#canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0; /* 一番後ろ */
+}
+
 #app {
   position: relative;
-  width: 100vw; height: 100vh;
-}
-
-#canvas {
-  position: fixed; top: 0; left: 0;
-  z-index: 0;
-}
-
-#main-post {
-  position: absolute;
-  top: 40%; left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 2;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1; /* 手前 */
+  display: flex;
+  justify-content: center; /* 左右中央 */
+  align-items: center;     /* 上下中央 */
 }
 
 #main-post img {
-  width: 300px;
-  height: 300px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  object-fit: cover;
-}
-
-#block-container {
-  position: absolute;
-  bottom: 50px; left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column-reverse; /* 下から積み上がる */
-  gap: 4px;
-  z-index: 3;
-}
-
-.block {
-  width: 60px;
-  height: 20px;
-  border-radius: 4px;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-width: 80vw;  /* 画面幅の80%まで */
+  max-height: 80vh; /* 画面高さの80%まで */
+  border-radius: 12px; /* 12pxラウンド */
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1); /* 柔らかな影 */
+  object-fit: contain; /* アスペクト比を維持 */
 }
