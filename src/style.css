@@ -3,7 +3,7 @@ body, html {
   padding: 0;
   overflow: hidden;
   background-color: #000;
-  font-family: sans-serif;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
 }
 
 #canvas {
@@ -18,29 +18,35 @@ body, html {
   z-index: 1;
   width: 100vw;
   height: 100vh;
+  cursor: crosshair; /* どこかを指し示すようなカーソル */
 }
 
-/* 入力欄：霧に溶けるようなデザイン */
+/* 入力中のボックス */
 .temp-input {
   position: absolute;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #333;
-  padding: 5px 10px;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #444;
+  padding: 8px 12px;
+  border-radius: 2px;
   outline: none;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
   transform: translate(-50%, -50%);
+  font-size: 14px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
-/* 確定したログ：気体の一部のように浮かぶ */
+/* 霧を漂うログ（ノード） */
 .node {
   position: absolute;
-  color: rgba(0, 0, 0, 0.6);
-  font-size: 0.9rem;
+  color: rgba(60, 60, 80, 0.65);
+  font-size: 0.85rem;
+  font-weight: 300;
   white-space: nowrap;
-  pointer-events: none; /* クリックを邪魔しない */
+  pointer-events: none;
   transform: translate(-50%, -50%);
-  transition: opacity 1.5s ease;
-  letter-spacing: 0.05em;
+  transition: opacity 3s ease, filter 3s ease;
+  letter-spacing: 0.12em;
+  /* 霧の光を背負っているような柔らかな影 */
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
 }
