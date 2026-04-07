@@ -1,51 +1,47 @@
 import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
 
-// --- シーン設定 ---
 const canvas = document.querySelector('#canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-// --- 霧のシェーダー（Fragment Shader） ---
-// ここでザラザラ感と色の混ざり具合を計算しているよ
 const fragmentShader = `
   precision highp float;
   uniform float uTime;
   uniform vec2 uResolution;
 
-  // ノイズ関数（ザラザラとムラを作る）
   float random(vec2 st) {
     return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
   }
 
   void main() {
+    // 画面の座標を 0.0 〜 1.0 に変換
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
-    float t = uTime * 0.2;
+    float t = uTime * 0.3;
 
-    // パステルカラーの定義
-    vec3 colorA = vec3(0.8, 0.9, 1.0); // ミント/スカイ
-    vec3 colorB = vec3(1.0, 0.85, 0.9); // ピーチ/ピンク
-    vec3 colorC = vec3(0.9, 0.8, 1.0); // ラベンダー
+    // パステルカラー（少し色味を調整したよ）
+    vec3 colorA = vec3(0.7, 0.85, 1.0); // 水色
+    vec3 colorB = vec3(1.0, 0.8, 0.9);  // ピンク
+    vec3 colorC = vec3(0.85, 0.7, 1.0); // 紫
 
-    // ゆっくり混ざり合う動き
-    float mixValue = sin(uv.x * 2.0 + t) * 0.5 + 0.5;
-    mixValue += cos(uv.y * 3.0 - t) * 0.2;
+    // ゆっくり波打つような混ざり方
+    float noise1 = sin(uv.x * 3.0 + t) * 0.5 + 0.5;
+    float noise2 = cos(uv.y * 2.0 - t * 0.8) * 0.5 + 0.5;
     
-    vec3 finalColor = mix(colorA, colorB, mixValue);
-    finalColor = mix(finalColor, colorC, sin(t * 0.5) * 0.5 + 0.5);
+    vec3 color = mix(colorA, colorB, noise1);
+    color = mix(color, colorC, noise2);
 
-    // 【重要】ザラザラした粒子感（グレイン）を加える
-    float grain = (random(uv + t) - 0.5) * 0.07;
-    finalColor += grain;
+    // ザラザラした質感（グレイン）
+    float grain = (random(uv + t) - 0.5) * 0.08;
+    color += grain;
 
-    gl_FragColor = vec4(finalColor, 1.0);
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 
-// --- メッシュ作成 ---
 const geometry = new THREE.PlaneGeometry(2, 2);
 const material = new THREE.ShaderMaterial({
   uniforms: {
@@ -57,17 +53,16 @@ const material = new THREE.ShaderMaterial({
 const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
-// --- アニメーションループ ---
 function animate(time) {
   material.uniforms.uTime.value = time * 0.001;
+  // リサイズに追従させるための念押し
+  material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 
-// リサイズ対応
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
-  material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 });
 
 requestAnimationFrame(animate);
