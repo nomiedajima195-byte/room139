@@ -1,7 +1,8 @@
 import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
 
-// --- シーン・レンダラー設定 ---
+// --- 初期化 ---
 const canvas = document.querySelector('#canvas');
+const app = document.querySelector('#app');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -9,7 +10,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-// --- 背景の霧（シェーダー） ---
+// --- シェーダー：静かな粒子の霧 ---
 const fragmentShader = `
   precision highp float;
   uniform float uTime;
@@ -21,20 +22,20 @@ const fragmentShader = `
 
   void main() {
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
-    float t = uTime * 0.2;
+    float t = uTime * 0.15; // よりゆったりとした動き
 
-    vec3 colorA = vec3(0.8, 0.9, 1.0); 
-    vec3 colorB = vec3(1.0, 0.85, 0.9);
-    vec3 colorC = vec3(0.9, 0.8, 1.0);
+    vec3 colorA = vec3(0.85, 0.92, 1.0); // 澄んだ水色
+    vec3 colorB = vec3(1.0, 0.88, 0.92); // 淡いピーチ
+    vec3 colorC = vec3(0.92, 0.88, 1.0); // 薄いラベンダー
 
-    float n1 = sin(uv.x * 2.0 + t) * 0.5 + 0.5;
-    float n2 = cos(uv.y * 3.0 - t * 0.5) * 0.5 + 0.5;
+    float n1 = sin(uv.x * 1.5 + t) * 0.5 + 0.5;
+    float n2 = cos(uv.y * 2.0 - t * 0.4) * 0.5 + 0.5;
     
     vec3 color = mix(colorA, colorB, n1);
     color = mix(color, colorC, n2);
 
-    // 目に優しい、動かない静かな粒子
-    float grain = (random(uv) - 0.5) * 0.015;
+    // 目に優しい、動かない粒子
+    float grain = (random(uv) - 0.5) * 0.012;
     color += grain;
 
     gl_FragColor = vec4(color, 1.0);
@@ -52,23 +53,15 @@ const material = new THREE.ShaderMaterial({
 const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
-// --- アニメーションループ ---
-function animate(time) {
-  material.uniforms.uTime.value = time * 0.001;
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
-}
-requestAnimationFrame(animate);
-
-// --- ログ（ノード）作成機能 ---
-const app = document.querySelector('#app');
-
+// --- ログ生成ロジック ---
 window.addEventListener('click', (e) => {
-  // すでに入力中のボックスがあれば削除（一つずつ作る）
-  const oldInput = document.querySelector('.temp-input');
-  if (oldInput) oldInput.remove();
+  // すでに入力中のものがあれば確定させずに消す
+  const currentInput = document.querySelector('.temp-input');
+  if (currentInput) {
+    currentInput.remove();
+    return;
+  }
 
-  // 入力欄を作成
   const input = document.createElement('input');
   input.className = 'temp-input';
   input.type = 'text';
@@ -78,7 +71,6 @@ window.addEventListener('click', (e) => {
   app.appendChild(input);
   input.focus();
 
-  // エンターキーで確定
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && input.value.trim() !== '') {
       createNode(input.value, e.clientX, e.clientY);
@@ -93,18 +85,49 @@ function createNode(text, x, y) {
   node.innerText = text;
   node.style.left = `${x}px`;
   node.style.top = `${y}px`;
-  
-  // ふわっと出現させるためのアニメーション
   node.style.opacity = '0';
+  node.style.filter = 'blur(8px)';
+  
   app.appendChild(node);
   
+  // 登場アニメーション
   setTimeout(() => {
-    node.style.opacity = '0.7';
-  }, 10);
+    node.style.opacity = '1';
+    node.style.filter = 'blur(0px)';
+    animateNode(node, x, y);
+  }, 20);
 }
 
-// リサイズ対応
+function animateNode(node, startX, startY) {
+  let startTime = Date.now();
+  // 個体ごとに少しずつ違う動きをさせるためのランダム係数
+  const randX = Math.random() * 0.5 + 0.5;
+  const randY = Math.random() * 0.5 + 0.5;
+
+  function update() {
+    let elapsed = (Date.now() - startTime) * 0.001;
+    // 139（Room 139）のゆったりとした浮遊
+    let dx = Math.sin(elapsed * 0.4 * randX) * 15;
+    let dy = Math.cos(elapsed * 0.3 * randY) * 15;
+    
+    node.style.left = `${startX + dx}px`;
+    node.style.top = `${startY + dy}px`;
+    
+    requestAnimationFrame(update);
+  }
+  update();
+}
+
+// --- ループとリサイズ ---
+function animate(time) {
+  material.uniforms.uTime.value = time * 0.001;
+  material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
-  material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
 });
+
+requestAnimationFrame(animate);
