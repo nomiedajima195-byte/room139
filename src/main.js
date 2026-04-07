@@ -1,4 +1,4 @@
-import * as THREE from 'three';　
+import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
 
 // --- シーン設定 ---
 const canvas = document.querySelector('#canvas');
