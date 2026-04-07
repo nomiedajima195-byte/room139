@@ -1,33 +1,52 @@
 body, html {
-  margin: 0; padding: 0;
-  width: 100%; height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
-  background-color: #f0f0f0;
+  background-color: #000;
   font-family: sans-serif;
 }
 
-#canvas {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 0; /* 一番後ろ */
-}
-
 #app {
-  position: relative;
+  position: relative; /* 基準点 */
   width: 100vw;
   height: 100vh;
-  z-index: 1; /* 手前 */
-  display: flex;
-  justify-content: center; /* 左右中央 */
-  align-items: center;     /* 上下中央 */
+  z-index: 1;
 }
 
-#main-post img {
-  max-width: 80vw;  /* 画面幅の80%まで */
-  max-height: 80vh; /* 画面高さの80%まで */
-  border-radius: 12px; /* 12pxラウンド */
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1); /* 柔らかな影 */
-  object-fit: contain; /* アスペクト比を維持 */
+#canvas {
+  position: fixed; /* 画面に固定して浮かせる */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1; /* 文字レイヤーより背面に送る */
+  display: block;
+}
+
+/* 入力欄：霧の上に浮く */
+.temp-input {
+  position: absolute;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #333;
+  padding: 5px 10px;
+  backdrop-filter: blur(5px);
+  transform: translate(-50%, -50%);
+  outline: none;
+}
+
+/* 確定したログ：霧の中に漂う */
+.node {
+  position: absolute;
+  z-index: 50;
+  color: rgba(40, 40, 60, 0.7);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.1em;
 }
