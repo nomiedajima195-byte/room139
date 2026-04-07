@@ -1,10 +1,9 @@
 import * as THREE from 'https://unpkg.com/three@0.170.0/build/three.module.js';
 
+// --- 背景（パステル・グレイン） ---
 const canvas = document.querySelector('#canvas');
-const app = document.querySelector('#app');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
 
 const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -16,15 +15,11 @@ const fragmentShader = `
   float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
   void main() {
     vec2 uv = gl_FragCoord.xy / uResolution.xy;
-    float t = uTime * 0.15;
-    vec3 c1 = vec3(0.85, 0.9, 1.0);
-    vec3 c2 = vec3(1.0, 0.85, 0.9);
-    vec3 c3 = vec3(0.9, 0.85, 1.0);
-    float n1 = sin(uv.x * 2.0 + t) * 0.5 + 0.5;
-    float n2 = cos(uv.y * 2.0 - t * 0.6) * 0.5 + 0.5;
-    vec3 color = mix(c1, c2, n1);
-    color = mix(color, c3, n2);
-    color += (random(uv) - 0.5) * 0.012;
+    vec3 c1 = vec3(0.9, 0.95, 1.0);
+    vec3 c2 = vec3(1.0, 0.9, 0.95);
+    float n = sin(uv.x * 2.0 + uTime * 0.2) * 0.5 + 0.5;
+    vec3 color = mix(c1, c2, n);
+    color += (random(uv) - 0.5) * 0.015; // 静止グレイン
     gl_FragColor = vec4(color, 1.0);
   }
 `;
@@ -43,48 +38,24 @@ function animate(time) {
 }
 requestAnimationFrame(animate);
 
-// ログ生成
-app.addEventListener('click', (e) => {
-  if (e.target !== app) return;
-  const old = document.querySelector('.temp-input');
-  if (old) old.remove();
+// --- インタラクション：ブロック積み ---
+const container = document.querySelector('#block-container');
+const colors = ['#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', '#9BF6FF', '#A0C4FF', '#BDB2FF', '#FFC6FF'];
 
-  const input = document.createElement('input');
-  input.className = 'temp-input';
-  input.style.left = `${e.clientX}px`;
-  input.style.top = `${e.clientY}px`;
-  app.appendChild(input);
-  input.focus();
-
-  input.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter' && input.value.trim()) {
-      createNode(input.value, e.clientX, e.clientY);
-      input.remove();
-    }
-  });
-});
-
-function createNode(text, x, y) {
-  const node = document.createElement('div');
-  node.className = 'node';
-  node.innerText = text;
-  node.style.left = `${x}px`;
-  node.style.top = `${y}px`;
-  app.appendChild(node);
-
-  let start = Date.now();
-  const rx = Math.random() * 0.5 + 0.5;
-  const ry = Math.random() * 0.5 + 0.5;
-
-  function drift() {
-    let elapsed = (Date.now() - start) * 0.001;
-    node.style.left = `${x + Math.sin(elapsed * 0.4 * rx) * 20}px`;
-    node.style.top = `${y + Math.cos(elapsed * 0.3 * ry) * 20}px`;
-    requestAnimationFrame(drift);
+window.addEventListener('click', (e) => {
+  // 画像や既存ブロック以外の場所をクリックしたらブロック追加
+  if (e.target.tagName === 'HTML' || e.target.id === 'app' || e.target.id === 'canvas') {
+    const block = document.createElement('div');
+    block.className = 'block';
+    // ランダムな色をパレットから選ぶ
+    block.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    container.appendChild(block);
+    
+    // 落ちてくるような演出
+    block.style.transform = 'translateY(-20px)';
+    setTimeout(() => { block.style.transform = 'translateY(0)'; }, 50);
   }
-  drift();
-}
-
-window.addEventListener('resize', () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+window.addEventListener('resize', () => renderer.setSize(window.innerWidth, window.innerHeight));
